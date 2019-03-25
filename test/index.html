@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+
+<head>
+    <script src="https://cdn.bootcss.com/jsencrypt/2.3.1/jsencrypt.min.js" type="text/javascript"></script>
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js" type="text/javascript"></script>
+</head>
+
+<body>
+    <textarea id="pubkey"></textarea>
+    <button>解密</button>
+    <p id="test"></p>
+    <script>
+        // var public_key = $("#pubkey").val()
+        // console.log(public_key)
+        window.onload = function () {
+            var s = "aaa"
+            $("button").click(function () {
+                var public_key = "-----BEGIN PUBLIC KEY-----MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu7ppnQ/ndsTum04Qjyx6d8Ufs6XhiHvkugbvZNhKM2QtIuavoiClaH8ClBYrec72gnSmQPmrwVZlknGoN/gP4BfmQzrflknb/jfosIx/+fmJJAmPnGWkWeoRqb8Jt5QEINkyOiPT0Vy4iu/K98+EQiEcGGZMcxROc0sTXIFWScQNLEsWqCvUwZpX5L9zTFcuEmhJOX+qBo1u6XhpuzuwD+pGDTMM9JGnntQlnFG2eRlp1rbiU6Bfv+mugt/NLOJUSsMSjEVv5OKtQfmrd62WrjwXpcI+S2705DjkUcNAauSOFqWeoPaIEsuCix4iURYQD0Zq6ucVi2ifhwK0yJ9LbQIDAQAB-----END PUBLIC KEY-----"
+                var tmp = encrypt(s, public_key)
+                console.log(tmp)
+                $("#test").text(tmp)
+            })
+        }
+        function encrypt(data, public_key) {  //加密
+            var _encrypt = new JSEncrypt();
+            _encrypt.setPublicKey(public_key);
+            var encrypted = _encrypt.encrypt(data);
+            return encrypted;
+        }
+
+        function decrypt(data, public_key) {
+            var _decrypt = new JSEncrypt();
+            _decrypt.setPrivateKey(public_key);
+            // _decrypt.setPublicKey(public_key)
+            var uncrypted = _decrypt.decrypt(data);
+            return uncrypted;
+        }
+    </script>
+</body>
+
+</html>
