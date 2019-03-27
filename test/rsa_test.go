@@ -1,7 +1,7 @@
 package rsa_test
 
 import (
-	"encrypt-tools/rsa"
+	"encrypt-tools/encrypt"
 
 	"testing"
 )
@@ -12,16 +12,17 @@ var (
 	thirdPartyPubPEM = "./rsa_public_key.pem"
 
 	temp   = ""
-	newrsa *rsa.Keys
+	sign   = ""
+	newrsa *encrypt.Keys
 )
 
 func init() {
-	rsa.Init(pubPEM, privPEM, thirdPartyPubPEM)
-	newrsa = rsa.GetRSA()
+	encrypt.Init(pubPEM, privPEM, thirdPartyPubPEM)
+	newrsa = encrypt.GetRSA()
 }
 
 func TestRSAEncrypt(t *testing.T) {
-	t.Log("=========开始加密测试==========")
+	t.Log("=========Start Encrypt Test==========")
 	var err error
 	temp, err = newrsa.PublicEncrypt("你要加密的内容")
 	// tmp2, err := newrsa.PrivateDecrypt(tmp)
@@ -29,8 +30,18 @@ func TestRSAEncrypt(t *testing.T) {
 }
 
 func TestRSADecrypt(t *testing.T) {
-	t.Log("=========开始解密测试==========")
+	t.Log("=========Start Decrypt Test==========")
 	var err error
-	tmp2, err := newrsa.PrivateDecrypt("W4dv5OZ53R/VP9zjfilvJBF+3nqUuriNN168Zmjh04XgSxUn8X0hB0cw3Dk02x9R4vW3RH9s/owTDRJSp/H6q/xkxf8zsnhScoNluxSCd4ijHd5E7fGluawNDvfXEV32srNvNGtwjxXn6t+M0b73Vm43v7EzLho4NlTWqyiweBuq3BQ5fp6t37aBcXWQqgkjxRqpkXZXSvBW2qgcI47EN3nvZ13Sp/g/tN8hJTwHbuXEkvs5xHvp27nA8bPZzz0WxYwFWyA+Im2NMQLg82FBoJiu9ZvFF8zb860MYkdAh57DdM+HMjG2G7OQVv4Cp/0oK9ziKhFU4M8HqR4nHnBoJg")
+	tmp2, err := newrsa.PrivateDecrypt(temp)
 	t.Log(tmp2, err)
+}
+
+func TestRSASignVerify(t *testing.T) {
+	t.Log("=========Start Sign & Verify Test==========")
+	var err error
+	unSgin := "aaaaa=1"
+	sign, err := newrsa.Sign(unSgin)
+	t.Log(sign, err)
+	err = newrsa.Verify(unSgin, sign)
+	t.Log(err)
 }

@@ -1,4 +1,4 @@
-package rsa
+package encrypt
 
 import (
 	"bytes"
@@ -14,10 +14,6 @@ import (
 )
 
 var (
-	// needRSAKey 需要加密的key
-	needRSAKey = map[string]bool{"real_name": true, "cert_no": true, "verify_entity": true, "bank_account_no": true, "account_name": true,
-		"phone_no": true, "validity_period": true, "verification_value": true, "telephone": true, "email": true, "organization_no": true,
-		"legal_person": true, "legal_person_phone": true, "agent_name": true, "license_no": true, "agent_mobile": true}
 	privateKey, publicKey           []byte
 	privateKeyBlock, publicKeyBlock *pem.Block
 	once                            sync.Once
@@ -122,33 +118,26 @@ func newRsaKeys() {
 
 // ThirdPubEncrypt 使用第三方公钥加密
 func (r *Keys) ThirdPubEncrypt(data string) (string, error) {
-	partLen := r.publicKey.N.BitLen()/8 - 11
-	chunks := split([]byte(data), partLen)
-	buffer := bytes.NewBufferString("")
-	for _, chunk := range chunks {
-		bytes, err := rsa.EncryptPKCS1v15(rand.Reader, r.thirdPartyPublicKey, chunk)
-		if err != nil {
-			return "", err
-		}
-		buffer.Write(bytes)
-	}
-
-	return base64.RawURLEncoding.EncodeToString(buffer.Bytes()), nil
+	return r.publicEncrypt(data, r.thirdPartyPublicKey)
 }
 
 // PublicEncrypt 使用自有公钥加密
 func (r *Keys) PublicEncrypt(data string) (string, error) {
+	return r.publicEncrypt(data, r.publicKey)
+}
+
+// publicEncrypt 使用公钥加密
+func (r *Keys) publicEncrypt(data string, publicKey *rsa.PublicKey) (string, error) {
 	partLen := r.publicKey.N.BitLen()/8 - 11
 	chunks := split([]byte(data), partLen)
 	buffer := bytes.NewBufferString("")
 	for _, chunk := range chunks {
-		bytes, err := rsa.EncryptPKCS1v15(rand.Reader, r.publicKey, chunk)
+		bytes, err := rsa.EncryptPKCS1v15(rand.Reader, publicKey, chunk)
 		if err != nil {
 			return "", err
 		}
 		buffer.Write(bytes)
 	}
-
 	return base64.RawURLEncoding.EncodeToString(buffer.Bytes()), nil
 }
 
@@ -166,16 +155,14 @@ func (r *Keys) PrivateDecrypt(encrypted string) (string, error) {
 		}
 		buffer.Write(decrypted)
 	}
-
 	return buffer.String(), err
 }
 
-// Sign 数据加签
+// Sign 数据加签(自有私钥)
 func (r *Keys) Sign(data string) (string, error) {
 	h := algorithm.New()
 	h.Write([]byte(data))
 	hashed := h.Sum(nil)
-	//
 	sign, err := rsa.SignPKCS1v15(rand.Reader, r.privateKey, algorithm, hashed)
 	if err != nil {
 		return "", err
@@ -183,17 +170,27 @@ func (r *Keys) Sign(data string) (string, error) {
 	return base64.RawURLEncoding.EncodeToString(sign), err
 }
 
-// Verify 数据验签 使用客户公钥在测试环境通过
-func (r *Keys) Verify(data string, sign string) error {
+// Verify 数据验签
+func (r *Keys) verify(data string, sign string, publicKey *rsa.PublicKey) error {
 	h := algorithm.New()
 	h.Write([]byte(data))
 	hashed := h.Sum(nil)
-	decodedSign, err := base64.StdEncoding.DecodeString(sign)
+	decodedSign, err := base64.RawURLEncoding.DecodeString(sign)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	return rsa.VerifyPKCS1v15(r.publicKey, algorithm, hashed, decodedSign)
+	return rsa.VerifyPKCS1v15(publicKey, algorithm, hashed, decodedSign)
+}
+
+// Verify 数据验签(自有公钥)
+func (r *Keys) Verify(data string, sign string) error {
+	return r.verify(data, sign, r.publicKey)
+}
+
+// VerifyThird 数据验签(第三方公钥)
+func (r *Keys) VerifyThird(data string, sign string) error {
+	return r.verify(data, sign, r.thirdPartyPublicKey)
 }
 
 func split(buf []byte, lim int) [][]byte {
